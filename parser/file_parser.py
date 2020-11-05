@@ -1,4 +1,5 @@
 from parser.cpp import CppFileDescription
+from parser.python import PythonFileDescription
 
 parser_types = {
     ".cpp": CppFileDescription,
@@ -6,7 +7,8 @@ parser_types = {
     ".CPP": CppFileDescription,
     ".C": CppFileDescription,
     ".hpp": CppFileDescription,
-    ".h": CppFileDescription
+    ".h": CppFileDescription,
+    ".py": PythonFileDescription
 }
 
 class GenericFileHandler:
