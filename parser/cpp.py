@@ -17,6 +17,9 @@ class CppFileDescription(AbstractFileDescription):
                 packages.append(package)
         return packages
 
+    def get_system_dependencies(self):
+        pass
+
 def _parse_ast(node, typename):
     """ 
     Recursively parse and find includes
