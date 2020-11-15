@@ -36,7 +36,7 @@ class Ros1MsgFileDescription(AbstractFileDescription):
                     #TODO: Should probably terminate the process
                     continue
                 
-                package_details = items[0].split()
+                package_details = items[0].split("/")
 
                 if len(package_details) < 1:
                     print ("Uh oh looks like a malformatted line...")
@@ -52,7 +52,7 @@ class Ros1MsgFileDescription(AbstractFileDescription):
                     print ("Line: "+str(lineno))
                     print ("\tFound dependency "+package_name+" which does not seem to be installed on the system")
 
-                # TODO: This is a good place to add a 
+                # TODO: This is a good place to add an error check also
                 dependencies.append(package_name)
 
         return set(dependencies)
