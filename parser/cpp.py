@@ -23,7 +23,7 @@ class CppFileDescription(AbstractFileDescription):
 def _parse_ast(node, typename):
     """ 
     Recursively parse and find includes
-    TODO: Add forward declaration
+    TODO: Add forward declarations
     """
     res = []
     if node.kind == clang.cindex.CursorKind.INCLUSION_DIRECTIVE:

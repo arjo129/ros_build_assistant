@@ -1,5 +1,6 @@
 from parser.cpp import CppFileDescription
 from parser.python import PythonFileDescription
+from parser.rosmsg import Ros1MsgFileDescription
 
 parser_types = {
     ".cpp": CppFileDescription,
@@ -8,7 +9,8 @@ parser_types = {
     ".C": CppFileDescription,
     ".hpp": CppFileDescription,
     ".h": CppFileDescription,
-    ".py": PythonFileDescription
+    ".py": PythonFileDescription,
+    ".msg": Ros1MsgFileDescription
 }
 
 class GenericFileHandler:
@@ -21,4 +23,5 @@ class GenericFileHandler:
                 parser = parser_types[file_type](filename)
                 parser.set_backend(self.backend)
                 return parser.get_dependencies()
-        return "unknown file type"
+        print ("Warning: Ignoring "+filename+"as no file handler has been registered")
+        return []
