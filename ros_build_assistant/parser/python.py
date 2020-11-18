@@ -1,4 +1,4 @@
-from parser.abstract_file_description import AbstractFileDescription
+from ros_build_assistant.parser.abstract_file_description import AbstractFileDescription
 import ast
 
 class PythonFileDescription(AbstractFileDescription):

@@ -1,5 +1,5 @@
 import clang.cindex
-from parser.abstract_file_description import AbstractFileDescription
+from ros_build_assistant.parser.abstract_file_description import AbstractFileDescription
 
 class CppFileDescription(AbstractFileDescription):
 

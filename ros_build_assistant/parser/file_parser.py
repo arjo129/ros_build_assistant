@@ -1,6 +1,6 @@
-from parser.cpp import CppFileDescription
-from parser.python import PythonFileDescription
-from parser.rosmsg import Ros1MsgFileDescription
+from ros_build_assistant.parser.cpp import CppFileDescription
+from ros_build_assistant.parser.python import PythonFileDescription
+from ros_build_assistant.parser.rosmsg import Ros1MsgFileDescription, Ros1SrvFileDescription
 
 parser_types = {
     ".cpp": CppFileDescription,
@@ -10,7 +10,8 @@ parser_types = {
     ".hpp": CppFileDescription,
     ".h": CppFileDescription,
     ".py": PythonFileDescription,
-    ".msg": Ros1MsgFileDescription
+    ".msg": Ros1MsgFileDescription,
+    ".srv": Ros1SrvFileDescription
 }
 
 class GenericFileHandler:
