@@ -6,6 +6,9 @@ class CombinatorState(enum.Enum):
     IN_PROGRESS = 1 #When the parser is parsing
     ERROR = -1 #When the parser fails
 
+"""
+This section defines the rules for a bracketed argument
+"""
 
 class BracketOpen:
     def __init__(self):
@@ -37,7 +40,8 @@ class BracketOpen:
         if data["num_equals"] == 0:
             return "[["
         return "["+ ("="*data["num_equals"]) + "["
-        
+
+
 class BracketClose:
     def __init__(self):
         self.state = "EXPECT_BRACE"
@@ -79,6 +83,14 @@ class BracketArgument:
         self.children = []
         self.body = ""
     
+    def reset(self):
+        self.state = "EXPECT_BRACKET_OPEN"
+        self.num_equals = 0
+        self.bracket_open = BracketOpen()
+        self.bracket_close = BracketClose()
+        self.children = []
+        self.body = ""
+
     def next_char(self, next_char):
         if self.state == "EXPECT_BRACKET_OPEN":
             res, data = self.bracket_open.next_char(next_char)
@@ -118,3 +130,39 @@ class BracketArgument:
         suffix = self.bracket_close.code_gen({"type": "bracket_close", "num_equals": data["num_equals"]})
         return prefix + data["body"] + suffix
 
+
+"""
+This defines the rules for a quoted argument
+"""
+class QuotedArgument:
+    def __init__(self):
+        self.state = "EXPECT_QUOTE"
+        self.body = ""
+    
+    def next_char(self, next_char):
+
+        if self.state == "EXPECT_QUOTE":
+            if next_char == "\"":
+                self.state = "EXPECT_BODY"
+                return CombinatorState.IN_PROGRESS, None
+            else:
+                return CombinatorState.ERROR, None
+        
+        elif self.state == "EXPECT_BODY":
+            if next_char == "\\":
+                self.body += next_char
+                self.state = "EXPECT_ESCAPE"
+                return CombinatorState.IN_PROGRESS, None
+            elif next_char == "\"":
+                return CombinatorState.FINISHED, {"type": "quoted_argument", "body": self.body}
+            else:
+                self.body += next_char
+                return CombinatorState.IN_PROGRESS, None
+
+        elif self.state == "EXPECT_ESCAPE":
+            self.body += next_char
+            self.state = "EXPECT_BODY"
+            return CombinatorState.IN_PROGRESS, None
+
+    def code_gen(self, data):
+        return "\"" + data["body"] + "\""
