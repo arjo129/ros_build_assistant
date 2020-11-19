@@ -34,9 +34,9 @@ class BracketOpen:
                 return CombinatorState.ERROR, None
             
     def code_gen(self, data):
-        if self.num_equals == 0:
+        if data["num_equals"] == 0:
             return "[["
-        return "["+ ("="*self.num_equals) + "["
+        return "["+ ("="*data["num_equals"]) + "["
         
 class BracketClose:
     def __init__(self):
@@ -64,9 +64,9 @@ class BracketClose:
                 return CombinatorState.ERROR, None
             
     def code_gen(self, data):
-        if self.num_equals == 0:
+        if data["num_equals"] == 0:
             return "]]"
-        return "]"+ ("="*self.num_equals) + "]"
+        return "]"+ ("="*data["num_equals"]) + "]"
 
 
 class BracketArgument:
@@ -113,4 +113,8 @@ class BracketArgument:
             else:
                 return CombinatorState.IN_PROGRESS, None
 
+    def code_gen(self, data):
+        prefix = self.bracket_open.code_gen({"type": "bracket_open", "num_equals": data["num_equals"]})
+        suffix = self.bracket_close.code_gen({"type": "bracket_close", "num_equals": data["num_equals"]})
+        return prefix + data["body"] + suffix
 
