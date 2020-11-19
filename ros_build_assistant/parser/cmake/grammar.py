@@ -138,7 +138,11 @@ class QuotedArgument:
     def __init__(self):
         self.state = "EXPECT_QUOTE"
         self.body = ""
-    
+
+    def reset(self):
+        self.state = "EXPECT_QUOTE"
+        self.body = ""
+
     def next_char(self, next_char):
 
         if self.state == "EXPECT_QUOTE":
@@ -166,3 +170,57 @@ class QuotedArgument:
 
     def code_gen(self, data):
         return "\"" + data["body"] + "\""
+
+
+
+"""
+Handles unquoted_argument including both legacy and modern versions
+"""
+class UnQuotedArgument:
+    
+    def __init__(self):
+        self.state = "EXPECT_ITEM"
+        self.body = ""
+        self.quoted_argument = QuotedArgument()
+
+    def reset(self):
+        self.state = "EXPECT_ITEM"
+        self.body = ""
+        self.quoted_argument = QuotedArgument()
+
+    def next_char(self, next_char):
+        
+        if self.state == "EXPECT_ITEM":
+            if next_char in " ()#\t\r\n;":
+                if len(self.body) == 0:
+                    return CombinatorState.ERROR, None
+                else:
+                    return CombinatorState.FINISHED, {"type": "unquoted_argument", "body": self.body}
+            elif next_char == "\\":
+                self.state = "EXPECT_ESCAPE"
+                self.body += next_char
+                return CombinatorState.IN_PROGRESS, None
+            elif next_char == "\"":
+                #stupid legacy behaviour
+                self.state = "EXPECT_QUOTE" # can reuse QuotedArgument I guess
+                self.quoted_argument.reset()
+                self.quoted_argument.next_char(next_char)
+                return CombinatorState.IN_PROGRESS, None
+            else:
+                self.body += next_char
+                return CombinatorState.IN_PROGRESS, None
+        
+        elif self.state == "EXPECT_ESCAPE":
+            self.state = "EXPECT_ITEM"
+            self.body += next_char
+            return CombinatorState.IN_PROGRESS, None
+        
+        elif self.state == "EXPECT_QUOTE":
+            res, data =self.quoted_argument.next_char(next_char)
+            if res == CombinatorState.FINISHED:
+                self.state = "EXPECT_ITEM"
+                self.body += self.quoted_argument.code_gen(data)
+            return CombinatorState.IN_PROGRESS, None
+
+    def code_gen(self, data):
+        return data["body"]
