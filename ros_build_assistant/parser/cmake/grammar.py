@@ -650,3 +650,80 @@ class Command:
             return data["command"] + self.argument_parser.code_gen(data["parameters"])
         else:
             return data["command"] + self.space_parser.code_gen(data["separator"]) + self.argument_parser.code_gen(data["parameters"])
+
+
+"""
+Top level CMakeList handler
+"""
+class CMakeFile:
+    def __init__(self):
+        self.comment_parser = Comment()
+        self.command_parser = Command()
+        self.space_parser = ArgumentSeperator()
+        self.body = []
+        self.state = "EXPECT_ANYTHING"
+
+    def get_ast(self):
+        if self.state != "EXPECT_ANYTHING":
+            raise Exception("File is not complete") # TODO: Improve errors
+        return self.body
+    
+    def next_char(self, next_char):
+        if self.state == "EXPECT_ANYTHING":
+            self.comment_parser.reset()
+            self.command_parser.reset()
+            self.space_parser.reset()
+            
+            res, _  = self.comment_parser.next_char(next_char)
+            if res == CombinatorState.IN_PROGRESS:
+                self.state = "EXPECT_COMMENT"
+                return CombinatorState.IN_PROGRESS, None
+            
+            res, _ = self.space_parser.next_char(next_char)
+            if res == CombinatorState.IN_PROGRESS:
+                self.state = "EXPECT_SPACE"
+                return CombinatorState.IN_PROGRESS, None
+            
+            res, _ = self.command_parser.next_char(next_char)
+            if res == CombinatorState.IN_PROGRESS:
+                self.state = "EXPECT_COMMAND"
+                return CombinatorState.IN_PROGRESS, None
+
+            #Should be unreachable
+        
+        elif self.state == "EXPECT_COMMENT":
+            res, data  = self.comment_parser.next_char(next_char)
+            if res == CombinatorState.FINISHED:
+                self.state = "EXPECT_ANYTHING"
+                self.body.append(data)
+                return CombinatorState.IN_PROGRESS, None
+            return res, None
+
+        elif self.state == "EXPECT_COMMAND":
+            res, data  = self.command_parser.next_char(next_char)
+            if res == CombinatorState.FINISHED:
+                self.state = "EXPECT_ANYTHING"
+                self.body.append(data)
+                return CombinatorState.IN_PROGRESS, None
+            return res, None
+        
+        elif self.state == "EXPECT_SPACE":
+            res, data  = self.space_parser.next_char(next_char)
+            if res == CombinatorState.FINISHED_ONE_AFTER:
+                self.state = "EXPECT_ANYTHING"
+                self.body.append(data)
+                return self.next_char(next_char)
+            return res, None
+
+
+def get_ast(input_string):
+    """
+    Builds an Abstract Syntax Tree given a CMake file.
+    input_string - a string containing the contents of the CMakeFile
+    """
+    cmake_parser = CMakeFile()
+    for character in input_string:
+        res, data = cmake_parser.next_char(character)
+        if res != CombinatorState.IN_PROGRESS:
+            raise Exception(data)
+    return cmake_parser.get_ast()
