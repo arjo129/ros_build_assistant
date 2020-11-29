@@ -718,7 +718,7 @@ class CMakeFile:
 
 def get_ast(input_string):
     """
-    Builds an Abstract Syntax Tree given a CMake file.
+    Builds an Abstract Syntax Tree (AST) given a CMake file.
     input_string - a string containing the contents of the CMakeFile
     """
     cmake_parser = CMakeFile()
@@ -727,3 +727,24 @@ def get_ast(input_string):
         if res != CombinatorState.IN_PROGRESS:
             raise Exception(data)
     return cmake_parser.get_ast()
+
+def ast_to_string(ast):
+    """
+    Converts AST back to string
+    """
+    if not isinstance(ast, list):
+        raise Exception("AST must be a list!!")
+
+    result = ""
+
+    for item in ast:
+        if "type" not in item:
+            raise Exception("Could not get type of element "+str(item))
+
+        if item["type"] == "command":
+            result += Command().code_gen(item)
+        elif item["type"] == "comment":
+            result += Comment().code_gen(item)
+        elif item["type"] == "whitespace":
+            result += ArgumentSeperator().code_gen(item)
+    return result
