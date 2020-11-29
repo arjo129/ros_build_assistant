@@ -500,6 +500,7 @@ class CommandArguments:
                 self.parenthesis.pop()
                 self.body.append({"type": "rparenthesis"})
                 if len(self.parenthesis) == 0:
+
                     return CombinatorState.FINISHED, {"type": "argument_list", "body": self.body}
                 return CombinatorState.IN_PROGRESS, None
 
@@ -533,7 +534,7 @@ class CommandArguments:
                 self.state = "EXPECT_BODY"
                 self.body.append(data)
                 self.argument_parser.reset()
-                self.next_char(next_char) # look ahead
+                return self.next_char(next_char) # look ahead
 
             if res == CombinatorState.ERROR:
                 return CombinatorState.ERROR, data
@@ -548,7 +549,7 @@ class CommandArguments:
                 self.state = "EXPECT_BODY"
                 self.body.append(data)
                 self.separator_parser.reset()
-                self.next_char(next_char) # look ahead
+                return self.next_char(next_char) # look ahead
 
             if res == CombinatorState.ERROR:
                 return CombinatorState.ERROR, data
@@ -583,3 +584,69 @@ class CommandArguments:
             elif item["type"] == "comment":
                 result += self.comment_parser.code_gen(item)
         return result
+
+"""
+Handles commands in their full glory
+"""
+class Command:
+    def __init__(self):
+        self.state = "EXPECT_START"
+        self.command_parser = UnQuotedArgument() #TODO CREATE A LITERAL PARSER....
+        self.space_parser = ArgumentSeperator()
+        self.argument_parser = CommandArguments()
+        self.command = {}
+        self.separators = {}
+        self.command_argument = {}
+
+    def reset(self):
+        self.command_parser.reset()
+        self.space_parser.reset()
+        self.argument_parser.reset()
+        self.command = {}
+        self.separators = {}
+        self.command_argument = {}
+
+    def next_char(self, next_char):
+
+        if self.state == "EXPECT_START":
+            res, _ = self.command_parser.next_char(next_char)
+            if res == CombinatorState.ERROR:
+                return CombinatorState.ERROR, _
+            elif res == CombinatorState.IN_PROGRESS:
+                self.state = "EXPECT_LITERAL"
+                return CombinatorState.IN_PROGRESS, None
+        
+        elif self.state == "EXPECT_LITERAL":
+            res, data = self.command_parser.next_char(next_char)
+            if res == CombinatorState.FINISHED:
+                self.state = "EXPECT_SPACE"
+                self.command = data["body"]
+                return self.next_char(next_char)
+
+            elif res == CombinatorState.ERROR:
+                return CombinatorState.ERROR, data
+            
+            return CombinatorState.IN_PROGRESS, None
+        
+        elif self.state == "EXPECT_SPACE":
+            res, data = self.space_parser.next_char(next_char)
+            if res == CombinatorState.FINISHED_ONE_AFTER or res == CombinatorState.ERROR:
+                self.state = "EXPECT_ARGUMENTS"
+                if data:
+                    self.separators = data
+                return self.next_char(next_char)
+
+            return CombinatorState.IN_PROGRESS, None
+
+        elif self.state == "EXPECT_ARGUMENTS":
+            res, data = self.argument_parser.next_char(next_char)
+            if res == CombinatorState.FINISHED:
+                self.command_argument = data
+                return CombinatorState.FINISHED, {"type": "command", "command": self.command, "separator": self.separators, "parameters": self.command_argument}
+            return res, None
+    
+    def code_gen(self, data):
+        if data["separator"] == {}:
+            return data["command"] + self.argument_parser.code_gen(data["parameters"])
+        else:
+            return data["command"] + self.space_parser.code_gen(data["separator"]) + self.argument_parser.code_gen(data["parameters"])
